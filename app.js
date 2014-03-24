@@ -13,15 +13,15 @@ comms.forEach(function(comm) {
 
 var openSerial = function(serialPort) {
   var doOpen = function() {
-    console.log("open serial...");
+    console.log("open serial " + serialPort.path);
     serialPort.open(function (err) {
       if (err) {
         console.log("serial failed...");
         setTimeout(doOpen(), 5000);
       } else {
-        console.log('serial open');
+        console.log('serial open ' + serialPort.path);
         serialPort.on('data', function(data) {
-          console.log(data);
+          console.log(serialPort.path + " " + data);
         });
         serialPort.on('error', function(data) {
           console.log("lost serial, retry");
