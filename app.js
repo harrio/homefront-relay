@@ -36,3 +36,12 @@ var openSerial = function(serialPort) {
 ports.forEach(function(port) {
   openSerial(port)();
 });
+
+process.on('exit', function() {
+  console.log("Shutting down...");
+  ports.forEach(function(port) {
+    port.close(function(err) {
+      console.log("Close " + port.path + " = " + err);
+    });
+  });
+});
