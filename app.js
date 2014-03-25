@@ -58,7 +58,7 @@ var checkSerial = function() {
 };
 
 console.log("Start healthcheck");
-setInterval(checkSerial, 5000);
+setInterval(checkSerial, 15000);
 
 console.log("Open ports");
 ports.forEach(function(port) {
