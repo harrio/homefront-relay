@@ -2,6 +2,7 @@ var serialport = require("serialport");
 
 var SerialPort = serialport.SerialPort;
 var comms = ["/dev/rfcomm0", "/dev/rfcomm1"];
+comms = ["/dev/tty.HC-06-DevB", "/dev/tty.HC-06-DevB-1"];
 
 var ports = [];
 comms.forEach(function(comm) {
@@ -58,7 +59,7 @@ var checkSerial = function() {
 };
 
 console.log("Start healthcheck");
-setInterval(checkSerial, 15000);
+setInterval(checkSerial, 60000);
 
 console.log("Open ports");
 ports.forEach(function(port) {
