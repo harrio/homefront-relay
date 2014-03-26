@@ -20,7 +20,7 @@ var connectPort = function(port) {
       console.log('success ' + port.addr + " " + channel);
       var data = "";
 
-      port.write(new Buffer('1', 'utf-8'), function(err, bytesWritten) {
+      port.port.write(new Buffer('1', 'utf-8'), function(err, bytesWritten) {
         if (err) console.log(err);
       });
 
@@ -56,7 +56,7 @@ var checkPorts = function() {
 };
 
 console.log("Start schedule");
-setInterval(checkPorts, 10000);
+setInterval(checkPorts, 30000);
 
 process.on('SIGINT', function() {
   console.log("Shutting down...");
