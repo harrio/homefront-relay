@@ -4,33 +4,67 @@ var scanner = new btSerial.BluetoothSerialPort();
 var addrs = ["00:13:12:31:25:81", "00:13:12:31:21:65"];
 var ports = [];
 
+addrs.forEach(function(addr) {
+  var port = new btSerial.BluetoothSerialPort();
+  ports.push({ addr: addr, port: port, lastSeen: new Date().getTime() });
+});
+
 //scanner.on('found', function(address, name) {
 //  console.log("Found device: " + address + " " + name);
 //});
 
-var connect = function(addr) {
-  var port = new btSerial.BluetoothSerialPort();
-  port.findSerialPortChannel(addr, function(channel) {
-    console.log("connecting to " + addr + " " + channel);
-    port.connect(addr, channel, function() {
-      console.log('success ' + addr + " " + channel);
+var connectPort = function(port) {
+  port.port.findSerialPortChannel(port.addr, function(channel) {
+    console.log("connecting to " + port.addr + " " + channel);
+    port.port.connect(port.addr, channel, function() {
+      console.log('success ' + port.addr + " " + channel);
       var data = "";
 
-      port.on('data', function(buffer) {
+      port.port.on('data', function(buffer) {
         data += buffer.toString('utf-8');
         var parts = data.split("\n");
         data = parts.pop();
         parts.forEach(function (part, i, array) {
           console.log("data: " + part);
         });
+        port.lastSeen = new Date().getTime();
       });
     }, function() {
-      console.log("cannot connect " + addr);
+      console.log("cannot connect " + port.addr);
     });
   });
 };
 
-addrs.forEach(function(addr) {
-  connect(addr);
+var closePort = function(port) {
+  if (port.isOpen()) {
+    port.close();
+  }
+};
+
+var checkPorts = function() {
+  console.log("Healthcheck");
+  var now = new Date().getTime();
+  ports.forEach(function(port) {
+    if (now - port.lastSeen > 20000) {
+      console.log("Retry " + port.addr);
+      closePort(port.port);
+      connectPort(port);
+    }
+  });
+};
+
+ports.forEach(function(port) {
+  connectPort(port);
+});
+
+console.log("Start healthcheck");
+setInterval(checkPorts, 60000);
+
+process.on('SIGINT', function() {
+  console.log("Shutting down...");
+  ports.forEach(function(port) {
+    closePort(port.port);
+  });
+  process.exit();
 });
 
