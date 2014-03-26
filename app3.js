@@ -44,6 +44,7 @@ var checkPort = function() {
   var addr = addrs[curr];
   console.log("Query " + addr);
   connectPort(addr);
+  curr++;
 };
 
 console.log("Start schedule");
