@@ -4,15 +4,19 @@ var scanner = new btSerial.BluetoothSerialPort();
 var addrs = ["00:13:12:31:25:81", "00:13:12:31:21:65"];
 var ports = [];
 
+//scanner.on('found', function(address, name) {
+//  console.log("Found device: " + address + " " + name);
+//});
+
 var connect = function(addr) {
   var port = new btSerial.BluetoothSerialPort();
   port.findSerialPortChannel(addr, function(channel) {
     console.log("connecting to " + addr + " " + channel);
     port.connect(addr, channel, function() {
-      console.log('connected to ' + addr + " " + channel);
+      console.log('success ' + addr + " " + channel);
       var data = "";
 
-      btSerial.on('data', function(buffer) {
+      port.on('data', function(buffer) {
         data += buffer.toString('utf-8');
         var parts = data.split("\n");
         data = parts.pop();
@@ -21,7 +25,7 @@ var connect = function(addr) {
         });
       });
     }, function() {
-      console.log('cannot connect');
+      console.log("cannot connect " + addr);
     });
   });
 };
