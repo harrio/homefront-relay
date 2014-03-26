@@ -7,7 +7,7 @@ var ports = [];
 var connect = function(addr) {
   var port = new btSerial.BluetoothSerialPort();
   port.findSerialPortChannel(addr, function(channel) {
-    console.log("connecting to " + add + " " + channel);
+    console.log("connecting to " + addr + " " + channel);
     port.connect(addr, channel, function() {
       console.log('connected to ' + addr + " " + channel);
       var data = "";
