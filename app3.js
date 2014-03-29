@@ -2,9 +2,10 @@ var btSerial = require('bluetooth-serial-port');
 
 var addrs = ["00:13:12:31:25:81", "00:13:12:31:21:65"];
 var curr = 0;
-var port = new btSerial.BluetoothSerialPort();
+var port;
 
 var connectPort = function(addr) {
+  port = new btSerial.BluetoothSerialPort();
   port.findSerialPortChannel(addr, function(channel) {
     console.log("connecting to " + addr + " " + channel);
     port.connect(addr, channel, function() {
@@ -32,6 +33,7 @@ var connectPort = function(addr) {
 
 var closePort = function() {
   if (port.isOpen()) {
+    console.log("Close port");
     port.close();
   }
 };
