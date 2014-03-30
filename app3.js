@@ -1,6 +1,6 @@
 var btSerial = require('bluetooth-serial-port'),
   jf = require('./services/jsonfile'),
-  http = require('http');
+  request = require('request');
 
 var addrs = ["00:13:12:31:25:81", "00:13:12:31:21:65"];
 var curr = 0;
@@ -10,27 +10,25 @@ var config = jf.readFileSync("config.json");
 
 var postData = function(data) {
   var options = {
-    host: config.host,
-    port: config.port,
-    path: '/saveData',
-    method: 'POST'
+    url: config.host + ":" + config.port + "/saveData",
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    json: data
   };
 
-  var req = http.request(options, function(res) {
-    console.log('STATUS: ' + res.statusCode);
-    console.log('HEADERS: ' + JSON.stringify(res.headers));
-    res.setEncoding('utf8');
-    res.on('data', function (chunk) {
-      console.log('BODY: ' + chunk);
-    });
-  });
+  function callback(error, response, body) {
+    if (!error) {
+        var info = JSON.parse(JSON.stringify(body));
+        console.log(info);
+    }
+    else {
+        console.log('Error happened: '+ error);
+    }
+  }
 
-  req.on('error', function(e) {
-    console.log('problem with request: ' + e.message);
-  });
-
-  req.write(data);
-  req.end();
+  request(options, callback);
 
 };
 
