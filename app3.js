@@ -10,9 +10,8 @@ var config = jf.readFileSync("config.json");
 
 var postData = function(data, addr) {
   
-  var dataObj = JSON.parse(data);
-  dataObj.addr = addr;
-
+  var dataObj =  { addr: addr, data: JSON.parse(data) };
+ 
   var options = {
     url: config.host + ":" + config.port + "/saveData",
     method: 'POST',
