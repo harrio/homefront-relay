@@ -8,14 +8,18 @@ var port;
 
 var config = jf.readFileSync("config.json");
 
-var postData = function(data) {
+var postData = function(data, addr) {
+  
+  var dataObj = JSON.parse(data);
+  dataObj.addr = addr;
+
   var options = {
     url: config.host + ":" + config.port + "/saveData",
     method: 'POST',
     headers: {
         'Content-Type': 'application/json'
     },
-    json: data
+    json: JSON.stringify(dataObj)
   };
 
   function callback(error, response, body) {
@@ -51,7 +55,7 @@ var connectPort = function(addr) {
         parts.forEach(function(part, i, array) {
           console.log("data: " + part);
           closePort();
-          postData(part);
+          postData(part, addr);
         });
       });
     }, function() {
