@@ -81,7 +81,7 @@ var checkPort = function() {
 };
 
 console.log("Start schedule");
-setInterval(checkPort, 30000);
+setInterval(checkPort, 300000);
 
 process.on('SIGINT', function() {
   console.log("Shutting down...");
