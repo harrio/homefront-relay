@@ -23,8 +23,7 @@ var postData = function(data, addr) {
 
   function callback(error, response, body) {
     if (!error) {
-        var info = JSON.parse(JSON.stringify(body));
-        console.log(info);
+        console.log("Upload successful");
     }
     else {
         console.log('Error happened: '+ error);
