@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "request": "2.33.0",
-    "bluetooth-serial-port": "1.0.5"
+    "bluetooth-serial-port": "1.1.4"
   },
   "author": "",
   "license": "ISC",
