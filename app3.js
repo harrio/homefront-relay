@@ -2,7 +2,7 @@ var btSerial = require('bluetooth-serial-port'),
   jf = require('./services/jsonfile'),
   request = require('request');
 
-var addrs = ["00:13:12:31:25:81", "00:13:12:31:21:65"];
+var addrs = ["00:13:12:31:25:81", "00:13:12:31:21:65", "00:13:12:31:23:96"];
 var curr = 0;
 var port;
 
@@ -10,7 +10,7 @@ var config = jf.readFileSync("config.json");
 
 var postData = function(data, addr) {
   
-  var dataObj =  { addr: addr, data: JSON.parse(data) };
+  var dataObj =  { mac: addr, data: JSON.parse(data) };
  
   var options = {
     url: config.host + ":" + config.port + "/saveData",
@@ -18,18 +18,18 @@ var postData = function(data, addr) {
     headers: {
         'Content-Type': 'application/json'
     },
-    json: JSON.stringify(dataObj)
+    json: dataObj
   };
 
-  function callback(error, response, body) {
-    if (!error) {
+  function callback(error, res, body) {
+    if (!error && res.statusCode == 201) {
         console.log("Upload successful");
     }
     else {
-        console.log('Error happened: '+ error);
+        console.log('Error occurred: '+ error);
     }
   }
-
+  
   request(options, callback);
 
 };
@@ -51,19 +51,24 @@ var connectPort = function(addr) {
         var parts = data.split("\n");
         data = parts.pop();
         parts.forEach(function(part, i, array) {
-          console.log("data: " + part);
           closePort();
           postData(part, addr);
         });
       });
     }, function() {
       console.log("cannot connect " + addr);
+      closePort();
     });
-  });
+  }, 
+    function() {
+      console.log("nothing found");
+      closePort();
+    }
+  );
 };
 
 var closePort = function() {
-  if (port.isOpen()) {
+  if (port && port.isOpen()) {
     console.log("Close port");
     port.close();
   }
@@ -71,7 +76,7 @@ var closePort = function() {
 
 var checkPort = function() {
   console.log("Fetch data");
-  if (curr > 1) {
+  if (curr > 2) {
     curr = 0;
   }
   var addr = addrs[curr];
@@ -81,7 +86,7 @@ var checkPort = function() {
 };
 
 console.log("Start schedule");
-setInterval(checkPort, 300000);
+setInterval(checkPort, 60000);
 
 process.on('SIGINT', function() {
   console.log("Shutting down...");
