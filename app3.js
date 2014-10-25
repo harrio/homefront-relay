@@ -9,7 +9,6 @@ var port;
 var config = jf.readFileSync("config.json");
 
 var postData = function(data, addr) {
-  
   var dataObj =  { mac: addr, data: JSON.parse(data) };
  
   var options = {
@@ -37,9 +36,9 @@ var postData = function(data, addr) {
 var connectPort = function(addr) {
   port = new btSerial.BluetoothSerialPort();
   port.findSerialPortChannel(addr, function(channel) {
-    console.log("connecting to " + addr + " " + channel);
+    console.log("Connecting to " + addr + " " + channel);
     port.connect(addr, channel, function() {
-      console.log('success ' + addr + " " + channel);
+      console.log('Read from ' + addr + " " + channel);
       var data = "";
 
       port.write(new Buffer('1', 'utf-8'), function(err, bytesWritten) {
@@ -56,37 +55,53 @@ var connectPort = function(addr) {
         });
       });
     }, function() {
-      console.log("cannot connect " + addr);
+      console.log("Cannot connect " + addr);
       closePort();
     });
-  }, 
+  },
     function() {
-      console.log("nothing found");
+      console.log("Nothing found.");
       closePort();
     }
   );
 };
 
+var fetchWeather = function() {
+  console.log("Query weather");
+  request('http://yle.fi/saa/resources/ajax/saa-api/current-weather.action?ids=634963',
+    function (error, response, body) {
+      if (response.statusCode == 200) {
+        var weather = JSON.parse(body);
+        var temp = weather[0].temperature;
+        var data = { key: "1", temp: temp };
+        postData(JSON.stringify(data), "weather");
+      }
+    });
+};
+
 var closePort = function() {
   if (port && port.isOpen()) {
-    console.log("Close port");
+    console.log("Close port.");
     port.close();
   }
 };
 
 var checkPort = function() {
-  console.log("Fetch data");
-  if (curr > 2) {
-    curr = 0;
+  if (curr > 3) {
+    console.log("Restarting...");
+    process.exit();
+  } else if (curr == 3) {
+    fetchWeather();
+  } else {
+    var addr = addrs[curr];
+    console.log("Query " + addr);
+    connectPort(addr);
   }
-  var addr = addrs[curr];
-  console.log("Query " + addr);
-  connectPort(addr);
   curr++;
 };
 
 console.log("Start schedule");
-setInterval(checkPort, 60000);
+setInterval(checkPort, 30000);
 
 process.on('SIGINT', function() {
   console.log("Shutting down...");
