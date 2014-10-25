@@ -73,7 +73,7 @@ var fetchWeather = function() {
       if (response.statusCode == 200) {
         var weather = JSON.parse(body);
         var temp = weather[0].temperature;
-        var data = { key: "1", temp: temp };
+        var data = [{ key: "1", temp: temp }];
         postData(JSON.stringify(data), "weather");
       }
     });
