@@ -1,78 +1,111 @@
-var serialport = require("serialport");
+var btSerial = require('bluetooth-serial-port'),
+  jf = require('./services/jsonfile'),
+  request = require('request');
 
-var SerialPort = serialport.SerialPort;
-var comms = ["/dev/rfcomm0", "/dev/rfcomm1"];
-comms = ["/dev/tty.HC-06-DevB", "/dev/tty.HC-06-DevB-1"];
+var curr = 0;
+var port;
 
-var ports = [];
-comms.forEach(function(comm) {
-  var serialPort = new SerialPort(comm,
-    { baudrate: 9600,
-    parser: serialport.parsers.readline("\n") });
-  ports.push({ port: serialPort, lastSeen: new Date().getTime() });
-});
+var config = jf.readFileSync("config.json");
+var addrs = config.sensors;
 
-var openSerial = function(serialPort) {
-  var doOpen = function() {
-    console.log("open serial " + serialPort.port.path);
-    serialPort.port.open(function (err) {
-      if (err) {
-        console.log("serial failed...");
-        setTimeout(doOpen, 5000);
-      } else {
-        console.log('serial open ' + serialPort.port.path);
-        serialPort.port.on('data', function(data) {
-          console.log(serialPort.port.path + " " + data);
+var postData = function(data, addr) {
+  var dataObj =  { mac: addr, data: JSON.parse(data) };
+ 
+  var options = {
+    url: config.host + ":" + config.port + "/saveData",
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    json: dataObj
+  };
+
+  function callback(error, res, body) {
+    if (!error && res.statusCode == 201) {
+        console.log("Upload successful");
+    }
+    else {
+        console.log('Error occurred: '+ error);
+    }
+  }
+  
+  request(options, callback);
+
+};
+
+var connectPort = function(addr) {
+  port = new btSerial.BluetoothSerialPort();
+  port.findSerialPortChannel(addr, function(channel) {
+    console.log("Connecting to " + addr + " " + channel);
+    port.connect(addr, channel, function() {
+      console.log('Read from ' + addr + " " + channel);
+      var data = "";
+
+      port.write(new Buffer('1', 'utf-8'), function(err, bytesWritten) {
+        if (err) console.log(err);
+      });
+
+      port.on('data', function(buffer) {
+        data += buffer.toString('utf-8');
+        var parts = data.split("\n");
+        data = parts.pop();
+        parts.forEach(function(part, i, array) {
+          closePort();
+          postData(part, addr);
         });
-        serialPort.port.on('error', function(data) {
-          console.log("lost serial, retry");
-          doOpen();
-        });
+      });
+    }, function() {
+      console.log("Cannot connect " + addr);
+      closePort();
+    });
+  },
+    function() {
+      console.log("Nothing found.");
+      closePort();
+    }
+  );
+};
+
+var fetchWeather = function() {
+  console.log("Query weather");
+  request('http://yle.fi/saa/resources/ajax/saa-api/current-weather.action?ids=634963',
+    function (error, response, body) {
+      if (response.statusCode == 200) {
+        var weather = JSON.parse(body);
+        var temp = weather[0].temperature;
+        var data = [{ key: "1", temp: temp }];
+        postData(JSON.stringify(data), "weather");
       }
     });
-  };
-  return doOpen;
 };
 
-var closePort = function(serialPort) {
-  serialPort.port.close(function(err) {
-    console.log("Close " + serialPort.port.path + " = " + err);
-  });
+var closePort = function() {
+  if (port && port.isOpen()) {
+    console.log("Close port.");
+    port.close();
+  }
 };
 
-var closeSerial = function() {
-  ports.forEach(function(serialPort) {
-    closePort(serialPort);
-  });
+var checkPort = function() {
+  if (curr > addrs.length) {
+    console.log("Restarting...");
+    process.exit();
+  } else if (curr == addrs.length) {
+    fetchWeather();
+  } else {
+    var addr = addrs[curr];
+    console.log("Query " + addr);
+    connectPort(addr);
+  }
+  curr++;
 };
 
-var checkSerial = function() {
-  console.log("Healthcheck");
-  var now = new Date().getTime();
-  ports.forEach(function(serialPort) {
-    if (now - serialPort.lastSeen > 10000) {
-      console.log("Retry " + serialPort.port.path);
-      closePort(serialPort);
-      openSerial(serialPort)();
-    }
-  });
-};
-
-console.log("Start healthcheck");
-setInterval(checkSerial, 60000);
-
-console.log("Open ports");
-ports.forEach(function(port) {
-  openSerial(port)();
-});
-
-process.on('exit', function() {
-  console.log("Shutting down...");
-  closeSerial();
-});
+console.log("Start schedule");
+setInterval(checkPort, 30000);
 
 process.on('SIGINT', function() {
   console.log("Shutting down...");
-  closeSerial();
+  closePort();
   process.exit();
 });
+
